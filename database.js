@@ -12,6 +12,8 @@ let createAuthorTable = "CREATE TABLE IF NOT EXISTS authors (name TEXT)"
 
 let createCategoriesTable = "CREATE TABLE IF NOT EXISTS categories (name TEXT)"
 
+let createBookCategoriesTable = "CREATE TABLE IF NOT EXISTS bookcategories (bookID INTEGER, categoryID INTEGER)"
+
 database.run(createBooksTable, (error) => {
   if (error) console.error(new Error("Create Books table failed"),error)
   else console.log("Book table success!")
@@ -25,6 +27,11 @@ database.run(createAuthorTable, (error) => {
 database.run(createCategoriesTable, (error) => {
   if (error) console.error(new Error("Create Categories table failed"),error)
   else console.log("Categories table success!")
+})
+
+database.run(createBookCategoriesTable, (error) => {
+  if (error) console.error(new Error("Create Book Categories table failed"),error)
+  else console.log("Book Categories table success!")
 })
 
 module.exports = database

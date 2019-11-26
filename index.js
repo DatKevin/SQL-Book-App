@@ -8,14 +8,14 @@ app.use(express.json());
 
 
 // Configuration Variables
-const port = 3000;
+let port = 3000;
 
 // Routes
 app.get('/', (request, response) => {
   response.send('Visit /api/books to see our list of titles');
 });
 
-// get all books
+//Get all books
 app.get('/api/books',  (req, res) => {
   let getAllBooks = "SELECT * FROM books"
   database.all(getAllBooks, (error, results) => {
@@ -25,20 +25,21 @@ app.get('/api/books',  (req, res) => {
   })
 });
 
-// get one book
+//Get one book
 app.get('/api/books/:id',  (req, res) => {
-  // find one book by its id
+  //Find one book by its id
   console.log('books show', req.params.id)
-  let selectbookbyID = "SELECT * FROM books WHERE oid = " + req.params.id
-  database.get(selectbookbyID, (error,results) => {
+  let id = req.params.id
+  let selectbookbyID = "SELECT * FROM books WHERE oid = ?"
+  database.get(selectbookbyID, [id], (error,results) => {
     if (error) console.error(new Error("Could not get single book", error))
     else res.json(results)
   })
 })
 
-// create new book
+//Create new book
 app.post('/api/books',  (req, res) => {
-  // create new book with form data (`req.body`)
+  //Create new book with form data (`req.body`)
   console.log('books create', req.body)
   let body = req.body
   let createBook = "INSERT INTO books VALUES (?,?,?,?,?)"
@@ -52,16 +53,16 @@ app.post('/api/books',  (req, res) => {
 })
 
 
-// update book
+//Update book
 app.put('/api/books/:id', (req,res) => {
-  // get book id from url params (`req.params`)
-  const bookId = parseInt(req.params.id);
-  // Use the keys in req.body to create dynamic SET values for the query string
-  const queryHelper = Object.keys(req.body).map(ele => `${ ele.toUpperCase() } = ?`);
-  // Use the dynamic SET values in from queryHelper to build full UPDATE string
-  const updateOneBook = `UPDATE books SET ${queryHelper.join(', ')} WHERE books.oid = ?`;
-  // Add values from req.body and the bookId to an array for use in database.run()
-  const queryValues = [...Object.values(req.body), bookId];
+  //Get book id from url params (`req.params`)
+  let bookId = parseInt(req.params.id);
+  //Use the keys in req.body to create dynamic SET values for the query string
+  let queryHelper = Object.keys(req.body).map(ele => `${ ele.toUpperCase() } = ?`);
+  //Use the dynamic SET values in from queryHelper to build full UPDATE string
+  let updateOneBook = `UPDATE books SET ${queryHelper.join(', ')} WHERE books.oid = ?`;
+  //Add values from req.body and the bookId to an array for use in database.run()
+  let queryValues = [...Object.values(req.body), bookId];
 
 
   database.run(updateOneBook, queryValues, function (error) {
@@ -75,13 +76,16 @@ app.put('/api/books/:id', (req,res) => {
   })
 })
 
-// delete book
+//Delete book
 app.delete('/api/books/:id',  (req, res) => {
-  // get book id from url params (`req.params`)
+  //Get book id from url params (`req.params`)
   console.log('books delete', req.params);
   let selectbookbyID = "DELETE FROM books WHERE oid = " + req.params.id
   database.get(selectbookbyID, (error) => {
-    if (error) console.error(new Error("Could not delete book", error))
+    if (error) {
+      console.error(new Error("Could not delete book", error))
+      res.sendStatus(500)
+    }
     else res.send("Book removed!")
   })
 })
@@ -95,14 +99,12 @@ app.get("/api/authors/", (req, res) => {
   let getAllAuthors = "SELECT * FROM authors"
   database.all(getAllAuthors, (error, results) => {
     if (error) console.error(new Error("Could not get all books", error))  
-    // send all books as JSON response
     else res.json(results)
   })
 })
 
 // 2. Write a route to add a new author to the database
 app.post('/api/authors',  (req, res) => {
-  // create new book with form data (`req.body`)
   console.log('authors create', req.body)
   let body = req.body
   let createAuthor = "INSERT INTO authors VALUES (?)"
@@ -152,32 +154,79 @@ app.post('/api/categories',  (req, res) => {
 // TODO: BOOKS_CATEGORIES ROUTES (MANY TO MANY)
 /////////////////////////////////////////////////
 
-app.put("/api/authors/:id", (req, res) => {
-  console.log("Updating Category", req.body)
-  let bookID = parseInt(req.params.id)
+//Returns all book titles with all thier categories
+app.get("/api/bookcategories/", (req, res) => {
+  console.log("Getting all books and categories")
+  let getAllBookCategories = "SELECT books.title, categories.name AS category FROM books JOIN bookcategories ON bookcategories.bookID = books.oid JOIN categories ON categories.oid = bookcategories.categoryID ORDER BY books.title"
+  database.all(getAllBookCategories, (error, results) => {
+    if (error) console.error(new Error("Could not get all book categories", error))  
+    // send all books as JSON response
+    else res.json(results)
+  })
+})
+
+//Get book categories by id book titles with all thier categories
+app.get("/api/bookcategories/:id", (req, res) => {
+  console.log("Getting book and categories", req.params.id)
+  let getBookCategories = "SELECT books.title, categories.name AS category FROM books JOIN bookcategories ON bookcategories.bookID = books.oid JOIN categories ON categories.oid = bookcategories.categoryID WHERE books.oid = ?"
+  database.all(getBookCategories, [req.params.id], (error, results) => {
+    if (error) console.error(new Error("Could not get book categories", error))  
+    // send book categories as JSON response
+    else res.json(results)
+  })
+})
+
+// create new categories for a book
+app.post("/api/bookcategories/",  (req, res) => {
+  // create new categories for existing book with form data (`req.body`)
+  console.log('book category create', req.body)
   let body = req.body
-  let updateCategory = "UPDATE books SET "
+  let createBookCat = "INSERT INTO bookcategories VALUES (?, ?)"
+  //Post should have a bookID and a categoryID as the keys
+  database.run(createBookCat, [body.bookID, body.categoryID], (error) => {
+    if (error) {
+      console.error(new Error("Could not create book category", error))
+    }
+    else {
+      console.log(req.body)
+      res.send("Book categories added!")
+    }
+  })
 })
 
 
-app.put('/api/books/:id', (req,res) => {
-  // get book id from url params (`req.params`)
-  const bookId = parseInt(req.params.id);
-  // Use the keys in req.body to create dynamic SET values for the query string
-  const queryHelper = Object.keys(req.body).map(ele => `${ ele.toUpperCase() } = ?`);
-  // Use the dynamic SET values in from queryHelper to build full UPDATE string
-  const updateOneBook = `UPDATE books SET ${queryHelper.join(', ')} WHERE books.oid = ?`;
-  // Add values from req.body and the bookId to an array for use in database.run()
-  const queryValues = [...Object.values(req.body), bookId];
+//Updates and changes an existing  category
+app.put("/api/bookcategories/",  (req, res) => {
+  console.log("Updating book category", req.body)
+  let body = req.body
+  let updateBookCat = "UPDATE bookcategories SET categoryID = ? WHERE bookID = ? AND categoryID = ?"
+  //Keys are bookID, oldcatID (Category ID to be changed), newcatID (new Category ID value)
+  database.run(updateBookCat, [body.newcatID, body.bookID, body.oldcatID], (error) => {
+      if (error) {
+        console.error(new Error("Could not update book cat", error))
+        res.sendStatus(500)
+      }    
+      else {
+        console.log(req.body)
+        res.send("Updated book Cat!")
+    }
+  })
+})
 
-
-  database.run(updateOneBook, queryValues, function (error) {
-    if (error) {
-      console.log(new Error('Could not update book'), error);
-      res.sendStatus(500);
-    } else {
-      console.log(`Book with ID ${bookId} was updated successfully`);
-      res.sendStatus(200);
+//Updates and deletes an existing  category
+app.delete("/api/bookcategories/",  (req, res) => {
+  console.log("Deleting book category", req.body)
+  let body = req.body
+  let deleteBookCat = "DELETE FROM bookcategories WHERE bookID = ? AND categoryID = ?"
+  //Keys are bookID and catID (Category ID to be deleted for that specific book)
+  database.run(deleteBookCat, [body.bookID, body.catID], (error) => {
+      if (error) {
+        console.error(new Error("Could not delete book cat", error))
+        res.sendStatus(500)
+      }    
+      else {
+        console.log(req.body)
+        res.send("Deleted book Cat!")
     }
   })
 })
@@ -185,5 +234,4 @@ app.put('/api/books/:id', (req,res) => {
 // Start Server
 app.listen(port, () => {
   console.log(`App listening on port ${port}`);
-});
-
+})

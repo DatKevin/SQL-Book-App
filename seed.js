@@ -10,7 +10,7 @@ const categories_list = [
   { name: "Romance" },
   { name: "Adventure" },
   { name: "Self-Help" }
-];
+]
 const authors_list = [
   { name: "Harper Lee" },
   { name: "F Scott Fitzgerald" },
@@ -20,7 +20,7 @@ const authors_list = [
   { name: "Tim Ferriss" },
   { name: "John Steinbeck" },
   { name: "William Shakespeare" }
-];
+]
 const books_list = [
   {
     title: "To Kill a Mockingbird",
@@ -99,13 +99,81 @@ const books_list = [
     release_date: "Unknown 1597",
     page_count: 800
   }
-];
+]
+const bookCategorySeeds = [
+  {
+    bookID: 1,
+    categoryID: 1
+  },
+  {
+    bookID: 1,
+    categoryID: 4
+  },
+  {
+    bookID: 2,
+    categoryID: 1
+  },
+  {
+    bookID: 2,
+    categoryID: 3
+  },
+  {
+    bookID: 3,
+    categoryID: 7
+  },
+  {
+    bookID: 3,
+    categoryID: 6
+  },
+  {
+    bookID: 4,
+    categoryID: 8
+  },
+  {
+    bookID: 4,
+    categoryID: 5
+  },
+  {
+    bookID: 5,
+    categoryID: 3
+  },
+  {
+    bookID: 5,
+    categoryID: 6
+  },
+  {
+    bookID: 6,
+    categoryID: 2
+  },
+  {
+    bookID: 6,
+    categoryID: 3
+  },
+  {
+    bookID: 7,
+    categoryID: 8
+  },
+  {
+    bookID: 7,
+    categoryID: 4
+  },
+  {
+    bookID: 8,
+    categoryID: 4
+  },
+  {
+    bookID: 8,
+    categoryID: 5
+  }
+]
 const deleteAuthors = 'DELETE FROM authors';
 const deleteBooks = 'DELETE FROM books';
 const deleteCategories = 'DELETE FROM categories';
+const deleteBookCategories = 'DELETE FROM bookcategories';
 const insertIntoAuthors = 'INSERT INTO authors (name) VALUES (?)';
 const insertIntoBooks = 'INSERT INTO books (title, author_id, image, release_date, page_count) VALUES (?, ?, ?, ?, ?)';
 const insertIntoCategories = 'INSERT INTO categories (name) VALUES (?)';
+const insertIntoBookCategories = "INSERT INTO bookcategories (bookID, categoryID) VALUES (?, ?)"
 db.run(deleteAuthors, error => {
   if (error) console.log(new Error('Could not delete authors'), error);
   else {
@@ -139,6 +207,21 @@ db.run(deleteAuthors, error => {
                 }
               });
             });
+            db.run(deleteBookCategories, error => {
+              if (error) {
+                console.log(new Error("Could not delete book cats"), error)
+              }
+              else {
+                bookCategorySeeds.forEach(bookcat => {
+                  db.run(insertIntoBookCategories, [bookcat.bookID, bookcat.categoryID], error => {
+                    if (error) console.log(new Error("Could not add book cats"), error)
+                    else {
+                      console.log(`${bookcat.bookID} added to the database!`)
+                    }
+                  })
+                })      
+              }
+            })
           }
         });
       }
